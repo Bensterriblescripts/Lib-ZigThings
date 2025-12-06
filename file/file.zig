@@ -8,14 +8,10 @@ pub fn InsertString(filepath: []const u8, findstring: []const u8, insertstring: 
 
     const workingDir = std.fs.cwd();
 
-    const fileContents = ReadFile(filepath, workingDir, alloc) catch |err| {
+    var fileContents = ReadFile("input.txt", workingDir, alloc) catch |err| {
         std.debug.print("Error during reading: {}\n", .{err});
-        return false;
+        return;
     };
-    if (fileContents.len == 0 or fileContents == null) {
-        std.debug.print("File is empty\n", .{});
-        return false;
-    }
     defer fileContents.deinit(alloc);
 
     for (fileContents.items, 0..) |_, fileIndex| {
@@ -29,28 +25,32 @@ pub fn InsertString(filepath: []const u8, findstring: []const u8, insertstring: 
                         break;
                     };
                     std.debug.print("Added text at index {}\n", .{pos});
-
                 }
             }
         }
     }
 
-    
     workingDir.writeFile(.{
         .sub_path = filepath,
         .data = fileContents.items,
     }) catch |err| {
-        std.debug.print("Error during writing: {}\n", .{err}); 
+        std.debug.print("Error during writing: {}\n", .{err});
         return false;
     };
 
     std.debug.print("Added text to file\n", .{});
     return true;
 }
-pub fn ReadFile(filepath: []const u8, workingDir: std.fs.Dir, alloc: std.mem.Allocator) ?ArrayList(u8) {
+pub fn ReadFile(filepath: []const u8, workingDir: std.fs.Dir, alloc: std.mem.Allocator) !ArrayList(u8) {
     const readContents = workingDir.readFileAlloc(alloc, filepath, 4000000) catch |err| {
         std.debug.print("Error during reading: {}\n", .{err});
-        return null;
+        return error.FileNotFound;
     };
     return ArrayList(u8).fromOwnedSlice(readContents);
+}
+pub fn IterateNewline(fileContents: []const u8) !void {
+    var iter = std.mem.splitSequence(u8, fileContents, "\n");
+    while (iter.next()) |line| {
+        std.debug.print("Line: {s}\n", .{line});
+    }
 }
